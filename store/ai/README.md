@@ -1,0 +1,1 @@
+In diesem Ordner werden die trainierten Gewichte gespeichert. Das ZIP-Archiv ist über den folgenden Link herunterzuladen und in diesem Ordner zu entpacken: `https://ruhr-uni-bochum.sciebo.de/s/BYlVug16aKXnuwI/download`
