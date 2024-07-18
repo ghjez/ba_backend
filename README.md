@@ -2,7 +2,7 @@
 This is a part of my bachelor thesis on deploying a web application for technical drawing processing.  
 Credit for creating the original [server](https://github.com/ShipanLiu/ba_server1) goes to [Shipan Liu](https://github.com/ShipanLiu).
 
-[Original README](https://github.com/ghjez/ba_backend/edit/main/README_ORIGINAL.md):
+[Original README](https://github.com/ghjez/ba_backend/blob/main/README_ORIGINAL.md):
 
 # Bachelor Project 🎓
 
