@@ -11,7 +11,6 @@ from src.recognizer import Recognizer
 from src.interpreter import Interpreter
 
 
-
 # to generate the dynamic ymal file for running the ai models
 def prepare_cfg(project_id, image_name, ai_model_id):
 

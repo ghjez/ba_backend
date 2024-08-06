@@ -313,7 +313,7 @@ class ProjectsViewSet(ModelViewSet):
 
         task_ids = []
         for image in unprocessed_images:
-            task = process_image.delay(project_id, image.id, ai_model_id)
+            task = process_image.delay(project_id, image.id, ai_model_id, True)
             task_ids.append(task.id)
 
         return Response({"message": "GOT IT, START PROCESSING"}, status=status.HTTP_202_ACCEPTED)

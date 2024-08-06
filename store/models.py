@@ -190,6 +190,31 @@ class Image(models.Model):
     class Meta:
         db_table = "image"
 
+class AiChainModule(models.Model):
+    module_url = models.CharField(max_length=200)
+    name = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def chain_module_url(self):
+        return f"{self.module_url}"
+    
+    def chain_module_name(self):
+        return f"{self.name}"
+        
+    def chain_module_description(self):
+        return f"{self.description}"
+
+    def __str__(self) -> str:
+        return f"{self.name}: {self.module_url}"
+
+    class Meta:
+        db_table = "ai_chain_module"
+
+
+
+
 class ResultSet(models.Model):
     image = models.OneToOneField(Image, on_delete=models.CASCADE)
     project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='resultSets')

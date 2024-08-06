@@ -226,7 +226,7 @@ class ProjectNameFilterForResultSet(SimpleListFilter):
 @admin.register(models.ResultSet)
 class ResultSetAdmin(admin.ModelAdmin):
     # for list view
-    list_display = ['belonged_project_id', 'belonged_project_name', "ai_model_name", "image_id", 'display_original_image', 'display_detection_image', 'display_recognition_image', 'display_interpretation_image', 'created_at', 'updated_at']
+    list_display = ['belonged_project_id', 'belonged_project_name', "ai_model_name", "image_id", 'display_original_image', 'display_detection_image', 'display_recognition_image', 'display_interpretation_image', 'created_at', 'updated_at', 'result_detection', 'result_recognition', 'result_interpretation']
 
     # for detailed view
     fields = ['belonged_project_id', 'belonged_project_name', "ai_model_name", "image_id", 'display_original_image', 'display_detection_image', 'display_recognition_image', 'display_interpretation_image',
@@ -256,6 +256,9 @@ class ResultSetAdmin(admin.ModelAdmin):
 
     def ai_model_name(self, project):
         return project.ai_model.name if project.ai_model else None
+    
+    def chain_modules(self, instance):
+        return instance.chain_modules
 
 
     def display_original_image(self, obj):
@@ -317,3 +320,10 @@ class AiModelAdmin(admin.ModelAdmin):
     # Optional: Customize the form used in the admin
     # fields = ['name', 'description', ...]
     # readonly_fields = ['created_at', 'updated_at']
+
+@admin.register(models.AiChainModule)
+class AiChainModuleAdmin(admin.ModelAdmin):
+    list_display = ['name', 'module_url', 'description', 'updated_at']
+    list_filter = ['created_at', 'updated_at']
+    search_fields = ['name', 'description', 'module_url']
+    ordering = ['updated_at']
