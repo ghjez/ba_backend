@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Customer, AiModel, Project, Image, ResultSet
+from .models import ChainModuleResult, ChainModuleResultSet, Customer, AiModel, Project, Image, ResultSet, AiChainModule
 from django.db import transaction
 from core.serializers import UserSerializer, DetailUserSerializer
 
@@ -10,7 +10,10 @@ class AisModelSerilizer(serializers.ModelSerializer):
         model = AiModel
         fields = ["id", "name", "description"]
 
-
+class AiChainModuleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AiChainModule
+        fields = ["id", "module_url", "name", "description"]
 
 class ImageModelSerializer(serializers.ModelSerializer):
     class Meta:
@@ -139,4 +142,40 @@ class ResultSetModelSerializer(serializers.ModelSerializer):
 
     def get_text_interpretation_image_url(self, obj):
         return obj.get_full_interpretation_image_url()
+    
+
+class ChainModuleResultModelSerializer(serializers.ModelSerializer):
+    module_name = serializers.CharField(source='module.name', read_only=True)
+    image_url = serializers.SerializerMethodField()
+    image_id = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ChainModuleResult
+        fields = ['id', 'module_name', 'image_id', 'image_url', 'result', 'created_at']
+
+    def get_image_url(self, obj):
+        if obj.image:
+            return obj.image.image_file.url if obj.image.image_file else None
+        return None
+    
+    def get_image_id(self, obj):
+        if obj.image:
+            return obj.image.id if obj.image else None
+        return None
+
+
+class ChainModuleResultSetModelSerializer(serializers.ModelSerializer):
+    results = ChainModuleResultModelSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = ChainModuleResultSet
+        fields = ['id', 'project_id', 'image_id', 'created_at', 'results']
+
+    project_id = serializers.IntegerField(read_only=True)
+    image_id = serializers.SerializerMethodField()
+
+    def get_image_id(self, obj):
+        if obj.image:
+            return obj.image.id if obj.image else None
+        return None
 

@@ -207,12 +207,56 @@ class AiChainModule(models.Model):
         return f"{self.description}"
 
     def __str__(self) -> str:
-        return f"{self.name}: {self.module_url}"
+        return f"ID: {self.id}, Name: {self.name}, URL: {self.module_url}"
 
     class Meta:
         db_table = "ai_chain_module"
 
+class ChainModuleResultSet(models.Model):
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='chainModuleResultSets')
+    image = models.ForeignKey(Image, on_delete=models.SET_NULL, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
 
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)  # Save the ResultSet first
+
+        # Check if there is a related image and update its has_result field
+        """  if self.image:
+            self.image.has_result = True
+            self.image.save()  # Save the image with the updated has_result field """
+    
+    def update_image_status(self, *args, **kwargs):
+        if self.image:
+            self.image.has_result = True
+            self.image.save()  # Save the image with the updated has_result field 
+
+    def __str__(self):
+        return f"ResultSet {self.id} for Project {self.project.name}"
+
+    class Meta:
+        db_table = "ai_chain_module_result_set"
+
+class ChainModuleResult(models.Model):
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='chainModuleResults')
+    module = models.ForeignKey(AiChainModule, on_delete=models.SET_NULL, blank=True, null=True)
+    image = models.ForeignKey(Image, on_delete=models.SET_NULL, blank=True, null=True)
+    result = models.JSONField()
+    result_set = models.ForeignKey(ChainModuleResultSet, on_delete=models.CASCADE, related_name='results')
+
+    # def save(self, *args, **kwargs):
+    #    super().save(*args, **kwargs)  # Save the ResultSet first
+
+        # Check if there is a related image and update its has_result field
+    """ if self.image:
+            self.image.has_result = True
+            self.image.save()  # Save the image with the updated has_result field """
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    # No updates, since every module run will create a new ChainModuleResult entry
+    def __str__(self) -> str:
+        return f"ID: {self.id}"
+    class Meta:
+        db_table = "ai_chain_module_result"
 
 
 class ResultSet(models.Model):

@@ -1,3 +1,4 @@
+import json
 from uuid import uuid4
 import time
 import sys, os, shutil
@@ -29,14 +30,14 @@ from rest_framework.mixins import (CreateModelMixin, ListModelMixin,
 from rest_framework.viewsets import GenericViewSet, ReadOnlyModelViewSet
 
 # inside
-from .models import Customer, AiModel, Project, Image, ResultSet
+from .models import ChainModuleResultSet, Customer, AiModel, Project, Image, ResultSet, AiChainModule
 from .serilizers import (CustomerModelSerializer, PatchCustomerModelSerilizer,
                          AisModelSerilizer, ProjectsModelSerilizer,
                          CreateProjectsModelSerilizer, UpdateProjectsModelSerilizer,
-                         ImageModelSerializer, ResultSetModelSerializer)
+                         ImageModelSerializer, ResultSetModelSerializer, AiChainModuleSerializer, ChainModuleResultModelSerializer, ChainModuleResultSetModelSerializer)
 from .permissions import IsAdminOrReadOnly
 from .utility.ai_utils import prepare_cfg, run_ai_model
-from .tasks import process_image, update_project_status
+from .tasks import process_image, update_project_status, processing_chain
 
 
 
@@ -240,6 +241,7 @@ class ProjectsViewSet(ModelViewSet):
             if good_images:
                 # Serialize the list of created image instances
                 serializer = ImageModelSerializer(good_images, many=True)
+                self.get_object().update_status_based_on_images()
                 if bad_images:
                     return Response({"data": serializer.data, "error": True, "error_msg": "part of the images are uploaded but some images does not have extensions 'png' or 'jpg',please upload PART again", "bad_images": bad_images}, status=status.HTTP_202_ACCEPTED)
                 return Response({"data": serializer.data, "error": False, "error_msg": "", "bad_images": bad_images}, status=status.HTTP_201_CREATED)
@@ -273,6 +275,8 @@ class ProjectsViewSet(ModelViewSet):
         ai_model_id = project.ai_model.id
         ai_model_name = project.ai_model.name
 
+        ai_chain_module_list = request.data
+
         # the related output path
         output_path = os.path.join(settings.MEDIA_ROOT, 'outputs', f'project_{project_id}')
 
@@ -286,7 +290,8 @@ class ProjectsViewSet(ModelViewSet):
 
         task_ids = []
         for image in project.images.all():
-            task = process_image.delay(project_id, image.id, ai_model_id)
+            #task = process_image.delay(project_id, image.id, ai_model_id)
+            task = processing_chain.delay(project_id, image.id, ai_chain_module_list)
             task_ids.append(task.id)
 
         return Response({"message": "GOT IT, START PROCESSING"}, status=status.HTTP_202_ACCEPTED)
@@ -299,6 +304,8 @@ class ProjectsViewSet(ModelViewSet):
         project_name = project.name
         ai_model_id = project.ai_model.id
         ai_model_name = project.ai_model.name
+
+        ai_chain_module_list = request.data
 
         # Filter images that have not been processed yet
         unprocessed_images = project.images.filter(has_result=False)
@@ -313,17 +320,52 @@ class ProjectsViewSet(ModelViewSet):
 
         task_ids = []
         for image in unprocessed_images:
-            task = process_image.delay(project_id, image.id, ai_model_id, True)
+            # task = process_image.delay(project_id, image.id, ai_model_id, True)
+            task = processing_chain.delay(project_id, image.id, ai_chain_module_list)
             task_ids.append(task.id)
 
         return Response({"message": "GOT IT, START PROCESSING"}, status=status.HTTP_202_ACCEPTED)
 
+    # Get all chain modules
+    # Example: http://127.0.0.1:8000/store/projects/{project_id}/modules
+    @action(detail=True, methods=["GET"], url_path='modules')
+    def get_ai_chain_modules(self, request, pk=None):
+        chain_queryset = AiChainModule.objects.all()
+        serializer = AiChainModuleSerializer(chain_queryset, many=True)
+        return Response(serializer.data)
 
 
+#>>>>>>>>>>>>>>>>>>>>>>>>>>>ChainModuleResultSetViewSet>>>>>>>>>>>>>>>>>>
 
+class ChainModuleResultSetViewSet(ReadOnlyModelViewSet):
+    serializer_class = ChainModuleResultSetModelSerializer
+    permission_classes = [IsAuthenticated]
 
+    def get_queryset(self):
+        project_id = self.kwargs.get('project_pk')
+        user = self.request.user
 
+        if user.is_staff:
+            return ChainModuleResultSet.objects.filter(project_id=project_id)
 
+        # Check if the project belongs to the user
+        if not Project.objects.filter(id=project_id, customer__user=user).exists():
+            raise PermissionDenied("You do not have permission to access this project's results.")
+
+        return ChainModuleResultSet.objects.filter(project_id=project_id)
+
+    def retrieve(self, request, *args, **kwargs):
+        project_id = self.kwargs.get('project_pk')
+        result_set_id = kwargs.get('pk')
+
+        # Ensure the user has access to the project
+        if not request.user.is_staff and not Project.objects.filter(id=project_id, customer__user=request.user).exists():
+            raise PermissionDenied("You do not have permission to access this project's results.")
+
+        queryset = ChainModuleResultSet.objects.filter(project_id=project_id, id=result_set_id)
+        result_set = get_object_or_404(queryset)
+        serializer = self.get_serializer(result_set)
+        return Response(serializer.data)
 
 
 
@@ -331,12 +373,6 @@ class ProjectsViewSet(ModelViewSet):
 
 
 #>>>>>>>>>>>>>>>>>>>>>>>>>>>ResultSetViewSet>>>>>>>>>>>>>>>>>>
-
-
-
-
-
-
 
 class ResultSetViewSet(ReadOnlyModelViewSet):
     serializer_class = ResultSetModelSerializer

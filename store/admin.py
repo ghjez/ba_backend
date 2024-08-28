@@ -257,8 +257,6 @@ class ResultSetAdmin(admin.ModelAdmin):
     def ai_model_name(self, project):
         return project.ai_model.name if project.ai_model else None
     
-    def chain_modules(self, instance):
-        return instance.chain_modules
 
 
     def display_original_image(self, obj):
@@ -327,3 +325,66 @@ class AiChainModuleAdmin(admin.ModelAdmin):
     list_filter = ['created_at', 'updated_at']
     search_fields = ['name', 'description', 'module_url']
     ordering = ['updated_at']
+
+class ChainModuleResultInline(admin.TabularInline):
+    model = models.ChainModuleResult
+    fields = ['module', 'image_id', 'result', 'created_at']
+    readonly_fields = ['module', 'image_id', 'result', 'created_at']
+    can_delete = False
+    extra = 0
+
+    def image_id(self, instance):
+        return instance.image.id
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return True
+
+@admin.register(models.ChainModuleResultSet)
+class ChainModuleResultSetAdmin(admin.ModelAdmin):
+    list_display = ['id', 'project_id', 'created_at']
+    readonly_fields = ['id', 'project', 'created_at']
+    list_filter = ['project__name', 'created_at']
+    search_fields = ['project__name']
+    inlines = [ChainModuleResultInline]
+
+
+    def project_id(self, instance):
+        return instance.project.id
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return True
+
+@admin.register(models.ChainModuleResult)
+class ChainModuleResultAdmin(admin.ModelAdmin):
+    list_display = ['project_id', 'module', 'image_id', 'created_at']
+    readonly_fields = ['project', 'module', 'image', 'result', 'created_at']
+    list_filter = ['project__name', 'module__name', 'created_at']
+    search_fields = ['project__name', 'module__name']
+
+    def project_id(self, instance):
+        return instance.project.id
+    
+    def image_id(self, instance):
+        return instance.image.id
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return True
+    

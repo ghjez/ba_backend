@@ -19,6 +19,8 @@ router.register("projects", views.ProjectsViewSet, basename="projects")
 projects_router = routers.NestedDefaultRouter(router, "projects", lookup="project") # lookup "project" ---changes--->  project_pk
 # projects_router.register("upload-images", views.ResultSetViewSet, basename="upload-images") #the drf will create for us 2 route based on the basename: "result-sets-datail", "result-sets-list"
 projects_router.register("results", views.ResultSetViewSet, basename="result-sets")
+# /projects/project_id/chainresults/{optional result set id}
+projects_router.register("chainresults", views.ChainModuleResultSetViewSet, basename="chain-result-sets")
 
 
 
